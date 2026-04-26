@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Manrope:wght@300;400;500;600;700&family=Lexend:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@theme {
+  --color-surface-container: #171a1f;
+  --color-surface-variant: #23262c;
+  --color-tertiary: #ac89ff;
+  --color-on-primary: #006413;
+  --color-error: #ff7351;
+  --color-surface-container-high: #1d2025;
+  --color-secondary: #00e3fd;
+  --color-on-tertiary: #290067;
+  --color-secondary-container: #006875;
+  --color-outline-variant: #46484d;
+  --color-surface-container-low: #111318;
+  --color-on-primary-container: #005a10;
+  --color-tertiary-container: #7000ff;
+  --color-surface-container-lowest: #000000;
+  --color-on-background: #f6f6fc;
+  --color-surface: #0c0e12;
+  --color-background: #0c0e12;
+  --color-on-surface: #f6f6fc;
+  --color-on-secondary: #004d57;
+  --color-outline: #74757a;
+  --color-on-secondary-container: #e8fbff;
+  --color-on-primary-fixed: #00440a;
+  --color-primary-container: #00fc40;
+  --color-surface-container-highest: #23262c;
+  --color-on-surface-variant: #aaabb0;
+  --color-primary: #9cff93;
+
+  --font-headline: "Space Grotesk", sans-serif;
+  --font-body: "Manrope", sans-serif;
+  --font-label: "Lexend", sans-serif;
+
+  --radius-DEFAULT: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
+  
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.pulse-dot {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .3; }
+}
+
+body {
+  background-color: #0c0e12;
+  color: #f6f6fc;
+  font-family: 'Manrope', sans-serif;
+  min-height: 100dvh;
+}
