@@ -11,24 +11,19 @@ function getYouTubeId(url: string) {
 
 export default function VideoPlayer({ url }: { url: string }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [coverRemoved, setCoverRemoved] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
   const videoId = getYouTubeId(url)
   if (!videoId) return null
 
-  const handleOpen = () => {
-    setIsOpen(true)
-    setCoverRemoved(false)
-  }
-
   const handleClose = () => {
     setIsOpen(false)
-    setCoverRemoved(false)
+    setIsPlaying(false)
   }
 
   return (
     <>
       <button
-        onClick={handleOpen}
+        onClick={() => setIsOpen(true)}
         className="text-[#9cff93] hover:scale-110 transition-transform"
       >
         <span
@@ -100,39 +95,20 @@ export default function VideoPlayer({ url }: { url: string }) {
               border: '1px solid rgba(70,72,77,0.3)',
             }}>
 
-              {/* iframe always loaded in background */}
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&playsinline=1&modestbranding=1`}
-                title="Match Highlights"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  border: 'none',
-                  zIndex: 1,
-                }}
-              />
-
-              {/* Cover sits on top hiding thumbnail */}
-              {!coverRemoved && (
+              {!isPlaying ? (
                 <div
                   style={{
                     position: 'absolute',
                     inset: 0,
-                    zIndex: 2,
-                    background: 'linear-gradient(135deg, #111318 0%, #1d2025 100%)',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '16px',
                     cursor: 'pointer',
+                    background: 'linear-gradient(135deg, #111318 0%, #1d2025 100%)',
                   }}
-                  onClick={() => setCoverRemoved(true)}
+                  onClick={() => setIsPlaying(true)}
                 >
                   <div style={{
                     width: '72px',
@@ -179,33 +155,34 @@ export default function VideoPlayer({ url }: { url: string }) {
                     </p>
                   </div>
                 </div>
+              ) : (
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1&modestbranding=1`}
+                  title="Match Highlights"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                  }}
+                />
               )}
 
             </div>
 
-            {!coverRemoved && (
-              <p style={{
-                textAlign: 'center',
-                color: '#aaabb0',
-                fontSize: '12px',
-                marginTop: '12px',
-                fontFamily: 'Lexend',
-              }}>
-                Tap to watch · tap outside to close
-              </p>
-            )}
-
-            {coverRemoved && (
-              <p style={{
-                textAlign: 'center',
-                color: '#aaabb0',
-                fontSize: '12px',
-                marginTop: '12px',
-                fontFamily: 'Lexend',
-              }}>
-                Tap outside to close
-              </p>
-            )}
+            <p style={{
+              textAlign: 'center',
+              color: '#aaabb0',
+              fontSize: '12px',
+              marginTop: '12px',
+              fontFamily: 'Lexend',
+            }}>
+              Tap outside to close
+            </p>
 
           </div>
         </div>
