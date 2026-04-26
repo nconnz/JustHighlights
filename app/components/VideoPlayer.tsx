@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 function getYouTubeId(url: string) {
   const match = url.match(
@@ -9,16 +9,38 @@ function getYouTubeId(url: string) {
   return match ? match[1] : null
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
+  }, [])
+  return isMobile
+}
+
 export default function VideoPlayer({ url }: { url: string }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  const isMobile = useIsMobile()
   const videoId = getYouTubeId(url)
   if (!videoId) return null
+
+  const handleOpen = () => {
+    setIsOpen(true)
+    if (isMobile) {
+      // On mobile load iframe immediately to allow autoplay
+      setIsPlaying(true)
+    }
+  }
+
+  const handleClose = () => {
+    setIsOpen(false)
+    setIsPlaying(false)
+  }
 
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={handleOpen}
         className="text-[#9cff93] hover:scale-110 transition-transform"
       >
         <span
@@ -42,10 +64,7 @@ export default function VideoPlayer({ url }: { url: string }) {
             justifyContent: 'center',
             padding: '16px',
           }}
-          onClick={() => {
-            setIsOpen(false)
-            setIsPlaying(false)
-          }}
+          onClick={handleClose}
         >
           <div
             style={{ width: '100%', maxWidth: '900px' }}
@@ -57,10 +76,7 @@ export default function VideoPlayer({ url }: { url: string }) {
                 Match Highlights
               </span>
               <button
-                onClick={() => {
-                  setIsOpen(false)
-                  setIsPlaying(false)
-                }}
+                onClick={handleClose}
                 style={{ color: '#aaabb0', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
               >
                 <span className="material-symbols-outlined">close</span>
@@ -77,8 +93,7 @@ export default function VideoPlayer({ url }: { url: string }) {
               border: '1px solid #46484d30',
             }}>
 
-              {!isPlaying ? (
-                // Spoiler-free placeholder — no thumbnail
+              {!isPlaying && (
                 <div
                   style={{
                     position: 'absolute',
@@ -90,6 +105,7 @@ export default function VideoPlayer({ url }: { url: string }) {
                     gap: '16px',
                     cursor: 'pointer',
                     background: 'linear-gradient(135deg, #111318 0%, #1d2025 100%)',
+                    zIndex: 2,
                   }}
                   onClick={() => setIsPlaying(true)}
                 >
@@ -105,11 +121,7 @@ export default function VideoPlayer({ url }: { url: string }) {
                   }}>
                     <span
                       className="material-symbols-outlined"
-                      style={{
-                        fontSize: '40px',
-                        color: '#9cff93',
-                        fontVariationSettings: "'FILL' 1",
-                      }}
+                      style={{ fontSize: '40px', color: '#9cff93', fontVariationSettings: "'FILL' 1" }}
                     >
                       play_arrow
                     </span>
@@ -123,10 +135,12 @@ export default function VideoPlayer({ url }: { url: string }) {
                     </p>
                   </div>
                 </div>
-              ) : (
-                // Actual YouTube embed — only loads when user taps play
+              )}
+
+              {/* iframe loads immediately on mobile, on tap for desktop */}
+              {isPlaying && (
                 <iframe
-                  src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1&modestbranding=1`}
+                  src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1&modestbranding=1&vq=medium`}
                   title="Match Highlights"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
@@ -137,6 +151,7 @@ export default function VideoPlayer({ url }: { url: string }) {
                     width: '100%',
                     height: '100%',
                     border: 'none',
+                    zIndex: 1,
                   }}
                 />
               )}
