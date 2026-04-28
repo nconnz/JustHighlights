@@ -17,7 +17,7 @@ export default async function Home() {
   const subCategories = categories.filter((c: any) => c.level === 1)
 
   return (
-    <main className="pt-20 pb-24 px-4 w-full max-w-5xl mx-auto min-h-screen">
+    <main className="pt-28 pb-24 px-4 w-full max-w-5xl mx-auto min-h-screen">
 
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#0c0e12]/60 backdrop-blur-xl shadow-[0_0_20px_rgba(156,255,147,0.1)] h-14 flex justify-between items-center px-4">
         <div className="flex items-center gap-3">
