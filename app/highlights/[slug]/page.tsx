@@ -46,22 +46,7 @@ export default async function HighlightsPage({
   const roundKeys = Object.keys(rounds)
 
   return (
-    <main className="pt-28 pb-24 px-4 w-full max-w-6xl mx-auto min-h-screen">
-
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0c0e12]/60 backdrop-blur-xl shadow-[0_0_20px_rgba(156,255,147,0.1)] h-14 flex justify-between items-center px-4">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="hover:bg-[#1d2025] transition-colors p-2 rounded-full">
-            <span className="material-symbols-outlined text-[#9cff93]">arrow_back</span>
-          </Link>
-          <h1 className="font-['Space_Grotesk'] font-black italic text-[#9cff93] tracking-widest uppercase text-lg">
-            VELOCITY
-          </h1>
-        </div>
-        <div className="w-8 h-8 rounded-full bg-[#1d2025] border border-[#46484d]/20 flex items-center justify-center">
-          <span className="material-symbols-outlined text-xs">person</span>
-        </div>
-      </header>
-
+    <main style={{ paddingTop: '96px', paddingBottom: '96px', paddingLeft: '16px', paddingRight: '16px', maxWidth: '1536px', margin: '0 auto', minHeight: '100vh' }}>
       <div className="mb-8 flex flex-col gap-2">
         <h2 className="font-['Space_Grotesk'] font-black text-4xl tracking-tighter uppercase italic leading-none">
           {category.name}

@@ -16,25 +16,8 @@ export default async function Home() {
   const topLevel = categories.filter((c: any) => c.level === 0)
   const subCategories = categories.filter((c: any) => c.level === 1)
 
-  return (
-    <main className="pt-28 pb-24 px-4 w-full max-w-5xl mx-auto min-h-screen">
-
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0c0e12]/60 backdrop-blur-xl shadow-[0_0_20px_rgba(156,255,147,0.1)] h-14 flex justify-between items-center px-4">
-        <div className="flex items-center gap-3">
-          <button className="hover:bg-[#1d2025] transition-colors p-2 rounded-lg">
-            <span className="material-symbols-outlined text-[#9cff93]">menu</span>
-          </button>
-          <h1 className="text-xl font-['Space_Grotesk'] font-black italic text-[#9cff93] tracking-widest uppercase">VELOCITY</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <button className="text-[#f6f6fc]/60 hover:bg-[#1d2025] transition-colors p-2 rounded-lg">
-            <span className="material-symbols-outlined">search</span>
-          </button>
-          <div className="w-8 h-8 rounded-full bg-[#1d2025] border-2 border-[#9cff93]/20 flex items-center justify-center">
-            <span className="material-symbols-outlined text-xs">person</span>
-          </div>
-        </div>
-      </header>
+return (
+    <main style={{ paddingTop: '96px', paddingBottom: '96px', paddingLeft: '16px', paddingRight: '16px', maxWidth: '1280px', margin: '0 auto', minHeight: '100vh' }}>
 
       <div className="mb-6 bg-[#111318] rounded-xl p-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
