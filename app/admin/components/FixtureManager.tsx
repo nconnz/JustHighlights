@@ -3,80 +3,122 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
 
+type MatchRow = {
+  id: string
+  home_team_id: string
+  away_team_id: string
+  match_date: string
+  match_time: string
+}
+
+function newRow(): MatchRow {
+  return { id: crypto.randomUUID(), home_team_id: '', away_team_id: '', match_date: '', match_time: '' }
+}
+
+function incrementRound(round: string): string {
+  const match = round.match(/^(.*?)(\d+)(\D*)$/)
+  if (match) return `${match[1]}${parseInt(match[2]) + 1}${match[3]}`
+  return round
+}
+
+const inputStyle = {
+  width: '100%',
+  padding: '8px 10px',
+  background: '#1d2025',
+  border: '1px solid rgba(70,72,77,0.4)',
+  borderRadius: '8px',
+  color: '#f6f6fc',
+  fontSize: '13px',
+  boxSizing: 'border-box' as const,
+  outline: 'none',
+}
+
+const labelStyle = {
+  display: 'block',
+  fontSize: '10px',
+  color: '#aaabb0',
+  fontFamily: 'Lexend',
+  marginBottom: '5px',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.05em',
+}
+
 export default function FixtureManager() {
   const [categories, setCategories] = useState<any[]>([])
   const [teams, setTeams] = useState<any[]>([])
-  const [fixtures, setFixtures] = useState<any[]>([])
+  const [recentFixtures, setRecentFixtures] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [success, setSuccess] = useState('')
-  const [form, setForm] = useState({
-    category_id: '',
-    season: '2026',
-    round: '',
-    home_team_id: '',
-    away_team_id: '',
-    match_date: '',
-    match_time: '',
-  })
+  const [savedCount, setSavedCount] = useState<number | null>(null)
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  const [competition, setCompetition] = useState('')
+  const [season, setSeason] = useState('2026')
+  const [round, setRound] = useState('')
+  const [matches, setMatches] = useState<MatchRow[]>([newRow()])
+
+  useEffect(() => { fetchData() }, [])
 
   async function fetchData() {
-    const { data: cats } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('level', 1)
-      .order('name')
-
-    const { data: teamData } = await supabase
-      .from('teams')
-      .select('*')
-      .order('name')
-
-    const { data: fixtureData } = await supabase
-      .from('fixtures')
-      .select(`
+    const [{ data: cats }, { data: teamData }, { data: fixtureData }] = await Promise.all([
+      supabase.from('categories').select('*').eq('level', 1).order('name'),
+      supabase.from('teams').select('*').order('name'),
+      supabase.from('fixtures').select(`
         id, round, match_date, season, category_id,
         home_team:teams!fixtures_home_team_id_fkey(name, abbreviation),
         away_team:teams!fixtures_away_team_id_fkey(name, abbreviation)
-      `)
-      .order('match_date', { ascending: false })
-      .limit(20)
-
+      `).order('match_date', { ascending: false }).limit(20),
+    ])
     setCategories(cats || [])
     setTeams(teamData || [])
-    setFixtures(fixtureData || [])
+    setRecentFixtures(fixtureData || [])
     setLoading(false)
   }
 
-  const filteredTeams = form.category_id
-    ? teams.filter(t => t.category_id === parseInt(form.category_id))
+  const filteredTeams = competition
+    ? teams.filter(t => t.category_id === parseInt(competition))
     : teams
 
-  async function handleSubmit() {
-    if (!form.category_id || !form.round || !form.home_team_id || !form.away_team_id || !form.match_date) {
-      alert('Please fill in all required fields')
+  function updateMatch(id: string, field: keyof MatchRow, value: string) {
+    setMatches(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m))
+  }
+
+  function removeMatch(id: string) {
+    setMatches(prev => prev.length > 1 ? prev.filter(m => m.id !== id) : prev)
+  }
+
+  function applyDateToAll(date: string) {
+    setMatches(prev => prev.map(m => ({ ...m, match_date: date })))
+  }
+
+  async function saveRound() {
+    if (!competition || !round) {
+      alert('Please select a competition and enter a round name.')
+      return
+    }
+    const valid = matches.filter(m => m.home_team_id && m.away_team_id && m.match_date)
+    if (valid.length === 0) {
+      alert('Add at least one match with teams and a date.')
       return
     }
     setSaving(true)
-    const { error } = await supabase.from('fixtures').insert({
-      category_id: parseInt(form.category_id),
-      season: parseInt(form.season),
-      round: form.round,
-      home_team_id: parseInt(form.home_team_id),
-      away_team_id: parseInt(form.away_team_id),
-      match_date: form.match_date,
-      match_time: form.match_time || null,
-    })
+    const { error } = await supabase.from('fixtures').insert(
+      valid.map(m => ({
+        category_id: parseInt(competition),
+        season: parseInt(season),
+        round,
+        home_team_id: parseInt(m.home_team_id),
+        away_team_id: parseInt(m.away_team_id),
+        match_date: m.match_date,
+        match_time: m.match_time || null,
+      }))
+    )
     setSaving(false)
     if (!error) {
-      setSuccess('Fixture added successfully')
-      setForm(prev => ({ ...prev, round: '', home_team_id: '', away_team_id: '', match_date: '', match_time: '' }))
+      setSavedCount(valid.length)
+      setMatches([newRow()])
+      setRound(incrementRound(round))
       fetchData()
-      setTimeout(() => setSuccess(''), 3000)
+      setTimeout(() => setSavedCount(null), 4000)
     }
   }
 
@@ -90,108 +132,158 @@ export default function FixtureManager() {
 
   return (
     <div>
-      {/* Add fixture form */}
+      {/* Round builder */}
       <div style={{ background: '#111318', borderRadius: '12px', padding: '20px', border: '1px solid rgba(70,72,77,0.2)', marginBottom: '24px' }}>
-        <h3 style={{ fontFamily: 'Space Grotesk', fontSize: '16px', fontWeight: 700, color: '#f6f6fc', margin: '0 0 16px', textTransform: 'uppercase' }}>
-          Add Fixture
-        </h3>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+        {/* Series config — sticky across saves */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '20px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '11px', color: '#aaabb0', fontFamily: 'Lexend', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Competition *</label>
+            <label style={labelStyle}>Competition *</label>
             <select
-              value={form.category_id}
-              onChange={(e) => setForm(prev => ({ ...prev, category_id: e.target.value, home_team_id: '', away_team_id: '' }))}
-              style={{ width: '100%', padding: '10px', background: '#1d2025', border: '1px solid rgba(70,72,77,0.4)', borderRadius: '8px', color: '#f6f6fc', fontSize: '13px', boxSizing: 'border-box' }}
+              value={competition}
+              onChange={e => { setCompetition(e.target.value); setMatches([newRow()]) }}
+              style={inputStyle}
             >
               <option value="">Select...</option>
               {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
             </select>
           </div>
-
           <div>
-            <label style={{ display: 'block', fontSize: '11px', color: '#aaabb0', fontFamily: 'Lexend', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Season *</label>
+            <label style={labelStyle}>Season *</label>
             <input
               type="number"
-              value={form.season}
-              onChange={(e) => setForm(prev => ({ ...prev, season: e.target.value }))}
-              style={{ width: '100%', padding: '10px', background: '#1d2025', border: '1px solid rgba(70,72,77,0.4)', borderRadius: '8px', color: '#f6f6fc', fontSize: '13px', boxSizing: 'border-box' }}
+              value={season}
+              onChange={e => setSeason(e.target.value)}
+              style={inputStyle}
             />
           </div>
-
           <div>
-            <label style={{ display: 'block', fontSize: '11px', color: '#aaabb0', fontFamily: 'Lexend', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Round *</label>
-            <input
-              type="text"
-              placeholder="e.g. Round 2"
-              value={form.round}
-              onChange={(e) => setForm(prev => ({ ...prev, round: e.target.value }))}
-              style={{ width: '100%', padding: '10px', background: '#1d2025', border: '1px solid rgba(70,72,77,0.4)', borderRadius: '8px', color: '#f6f6fc', fontSize: '13px', boxSizing: 'border-box' }}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '11px', color: '#aaabb0', fontFamily: 'Lexend', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Home Team *</label>
-            <select
-              value={form.home_team_id}
-              onChange={(e) => setForm(prev => ({ ...prev, home_team_id: e.target.value }))}
-              style={{ width: '100%', padding: '10px', background: '#1d2025', border: '1px solid rgba(70,72,77,0.4)', borderRadius: '8px', color: '#f6f6fc', fontSize: '13px', boxSizing: 'border-box' }}
-            >
-              <option value="">Select...</option>
-              {filteredTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '11px', color: '#aaabb0', fontFamily: 'Lexend', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Away Team *</label>
-            <select
-              value={form.away_team_id}
-              onChange={(e) => setForm(prev => ({ ...prev, away_team_id: e.target.value }))}
-              style={{ width: '100%', padding: '10px', background: '#1d2025', border: '1px solid rgba(70,72,77,0.4)', borderRadius: '8px', color: '#f6f6fc', fontSize: '13px', boxSizing: 'border-box' }}
-            >
-              <option value="">Select...</option>
-              {filteredTeams.filter(t => t.id !== parseInt(form.home_team_id)).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '11px', color: '#aaabb0', fontFamily: 'Lexend', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date *</label>
-            <input
-              type="date"
-              value={form.match_date}
-              onChange={(e) => setForm(prev => ({ ...prev, match_date: e.target.value }))}
-              style={{ width: '100%', padding: '10px', background: '#1d2025', border: '1px solid rgba(70,72,77,0.4)', borderRadius: '8px', color: '#f6f6fc', fontSize: '13px', boxSizing: 'border-box' }}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '11px', color: '#aaabb0', fontFamily: 'Lexend', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Time</label>
-            <input
-              type="time"
-              value={form.match_time}
-              onChange={(e) => setForm(prev => ({ ...prev, match_time: e.target.value }))}
-              style={{ width: '100%', padding: '10px', background: '#1d2025', border: '1px solid rgba(70,72,77,0.4)', borderRadius: '8px', color: '#f6f6fc', fontSize: '13px', boxSizing: 'border-box' }}
-            />
+            <label style={labelStyle}>Round *</label>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <input
+                type="text"
+                placeholder="e.g. Round 1"
+                value={round}
+                onChange={e => setRound(e.target.value)}
+                style={{ ...inputStyle, flex: 1 }}
+              />
+              <button
+                onClick={() => setRound(incrementRound(round))}
+                title="Next round"
+                style={{ padding: '8px 10px', background: '#1d2025', border: '1px solid rgba(70,72,77,0.4)', borderRadius: '8px', color: '#9cff93', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}
+              >
+                +1
+              </button>
+            </div>
           </div>
         </div>
 
-        {success && <p style={{ color: '#9cff93', fontSize: '12px', fontFamily: 'Lexend', marginBottom: '12px' }}>{success}</p>}
+        {/* Match rows */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+          {matches.map((match, index) => (
+            <div key={match.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 140px 110px auto', gap: '8px', alignItems: 'end', background: '#1a1d23', borderRadius: '10px', padding: '10px' }}>
+              <div>
+                {index === 0 && <label style={labelStyle}>Home Team</label>}
+                <select
+                  value={match.home_team_id}
+                  onChange={e => updateMatch(match.id, 'home_team_id', e.target.value)}
+                  style={inputStyle}
+                >
+                  <option value="">Home team...</option>
+                  {filteredTeams.filter(t => t.id !== parseInt(match.away_team_id)).map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                {index === 0 && <label style={labelStyle}>Away Team</label>}
+                <select
+                  value={match.away_team_id}
+                  onChange={e => updateMatch(match.id, 'away_team_id', e.target.value)}
+                  style={inputStyle}
+                >
+                  <option value="">Away team...</option>
+                  {filteredTeams.filter(t => t.id !== parseInt(match.home_team_id)).map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                {index === 0 && (
+                  <label style={labelStyle}>
+                    Date
+                    {match.match_date && (
+                      <button
+                        onClick={() => applyDateToAll(match.match_date)}
+                        style={{ marginLeft: '6px', background: 'none', border: 'none', color: '#9cff93', fontSize: '9px', cursor: 'pointer', fontFamily: 'Lexend', textTransform: 'uppercase', letterSpacing: '0.05em', padding: 0 }}
+                      >
+                        Apply to all
+                      </button>
+                    )}
+                  </label>
+                )}
+                <input
+                  type="date"
+                  value={match.match_date}
+                  onChange={e => updateMatch(match.id, 'match_date', e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                {index === 0 && <label style={labelStyle}>Time</label>}
+                <input
+                  type="time"
+                  value={match.match_time}
+                  onChange={e => updateMatch(match.id, 'match_time', e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: index === 0 ? 'flex-end' : 'center', paddingBottom: index === 0 ? '1px' : 0 }}>
+                <button
+                  onClick={() => removeMatch(match.id)}
+                  disabled={matches.length === 1}
+                  style={{ background: 'none', border: 'none', color: matches.length === 1 ? '#46484d' : '#ff7351', cursor: matches.length === 1 ? 'default' : 'pointer', fontSize: '18px', lineHeight: 1, padding: '6px' }}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
 
-        <button
-          onClick={handleSubmit}
-          disabled={saving}
-          style={{ padding: '10px 24px', background: '#9cff93', color: '#006413', border: 'none', borderRadius: '8px', fontSize: '13px', fontFamily: 'Lexend', fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-        >
-          {saving ? 'Adding...' : 'Add Fixture'}
-        </button>
+        {/* Row actions */}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            onClick={() => setMatches(prev => [...prev, newRow()])}
+            style={{ padding: '8px 16px', background: 'transparent', border: '1px dashed rgba(156,255,147,0.4)', borderRadius: '8px', color: '#9cff93', fontSize: '12px', fontFamily: 'Lexend', cursor: 'pointer', fontWeight: 600 }}
+          >
+            + Add match
+          </button>
+
+          <div style={{ flex: 1 }} />
+
+          {savedCount !== null && (
+            <span style={{ color: '#9cff93', fontSize: '12px', fontFamily: 'Lexend' }}>
+              ✓ {savedCount} fixture{savedCount !== 1 ? 's' : ''} saved — round advanced
+            </span>
+          )}
+
+          <button
+            onClick={saveRound}
+            disabled={saving}
+            style={{ padding: '10px 24px', background: saving ? '#1d2025' : '#9cff93', color: saving ? '#aaabb0' : '#006413', border: 'none', borderRadius: '8px', fontSize: '13px', fontFamily: 'Lexend', fontWeight: 700, cursor: saving ? 'default' : 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+          >
+            {saving ? 'Saving...' : `Save ${matches.filter(m => m.home_team_id && m.away_team_id && m.match_date).length || ''} Fixtures`}
+          </button>
+        </div>
       </div>
 
       {/* Recent fixtures */}
-      <h3 style={{ fontFamily: 'Space Grotesk', fontSize: '16px', fontWeight: 700, color: '#f6f6fc', margin: '0 0 12px', textTransform: 'uppercase' }}>
+      <h3 style={{ fontFamily: 'Space Grotesk', fontSize: '14px', fontWeight: 700, color: '#f6f6fc', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         Recent Fixtures
       </h3>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {fixtures.map((f: any) => (
+        {recentFixtures.map((f: any) => (
           <div key={f.id} style={{ background: '#111318', borderRadius: '10px', padding: '12px 16px', border: '1px solid rgba(70,72,77,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <p style={{ margin: 0, fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '13px', color: '#f6f6fc' }}>
