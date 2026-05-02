@@ -62,12 +62,13 @@ export default function VideoManager() {
         onReady: () => {
           setEmbedStatus(prev => ({ ...prev, [fixtureId]: 'ok' }))
           container.remove()
+          supabase.from('fixtures').update({ youtube_embeddable: true }).eq('id', fixtureId)
         },
         onError: (e: any) => {
-          // 101 and 150 = embedding disabled by owner; 100/150 also covers unavailable
           const restricted = e.data === 101 || e.data === 150
           setEmbedStatus(prev => ({ ...prev, [fixtureId]: restricted ? 'restricted' : 'unavailable' }))
           container.remove()
+          supabase.from('fixtures').update({ youtube_embeddable: false }).eq('id', fixtureId)
         },
       },
     })
@@ -106,12 +107,12 @@ export default function VideoManager() {
 
   async function saveUrl(fixtureId: number) {
     setSaving(fixtureId)
+    const url = urls[fixtureId] || null
     await supabase
       .from('fixtures')
-      .update({ youtube_url: urls[fixtureId] || null })
+      .update({ youtube_url: url, youtube_embeddable: null })
       .eq('id', fixtureId)
     setSaving(null)
-    const url = urls[fixtureId]
     if (url) checkEmbedStatus(fixtureId, url)
     else setEmbedStatus(prev => ({ ...prev, [fixtureId]: 'unchecked' }))
   }

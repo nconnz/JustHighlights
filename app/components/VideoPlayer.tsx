@@ -37,14 +37,39 @@ function loadYTApi(): Promise<void> {
   })
 }
 
-export default function VideoPlayer({ url }: { url: string }) {
+function isKnownRestricted(videoId: string): boolean {
+  try { return localStorage.getItem(`yt_restricted_${videoId}`) === '1' } catch { return false }
+}
+
+function markRestricted(videoId: string) {
+  try { localStorage.setItem(`yt_restricted_${videoId}`, '1') } catch {}
+}
+
+function openOnYouTube(videoId: string) {
+  const url = `https://www.youtube.com/watch?v=${videoId}`
+  const a = document.createElement('a')
+  a.href = url
+  a.target = '_blank'
+  a.rel = 'noopener noreferrer'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
+
+export default function VideoPlayer({ url, embeddable }: { url: string; embeddable?: boolean | null }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isRestricted, setIsRestricted] = useState(false)
+  const [knownRestricted, setKnownRestricted] = useState(embeddable === false)
   const playerContainerRef = useRef<HTMLDivElement>(null)
   const playerRef = useRef<any>(null)
 
   const videoId = getYouTubeId(url)
+
+  useEffect(() => {
+    if (embeddable === false) { setKnownRestricted(true); return }
+    if (videoId) setKnownRestricted(isKnownRestricted(videoId))
+  }, [videoId, embeddable])
 
   const handleClose = useCallback(() => {
     setIsOpen(false)
@@ -56,6 +81,15 @@ export default function VideoPlayer({ url }: { url: string }) {
     }
   }, [])
 
+  const handlePlay = useCallback(() => {
+    if (!videoId) return
+    if (embeddable === false || isKnownRestricted(videoId)) {
+      openOnYouTube(videoId)
+      return
+    }
+    setIsOpen(true)
+  }, [videoId, embeddable])
+
   useEffect(() => {
     if (!isPlaying || !videoId) return
     let cancelled = false
@@ -66,7 +100,12 @@ export default function VideoPlayer({ url }: { url: string }) {
         playerVars: { autoplay: 1, rel: 0, playsinline: 1, modestbranding: 1 },
         events: {
           onError: (e: any) => {
-            if (e.data === 101 || e.data === 150) setIsRestricted(true)
+            if (e.data === 101 || e.data === 150) {
+              markRestricted(videoId)
+              setKnownRestricted(true)
+              openOnYouTube(videoId)
+              setIsRestricted(true)
+            }
           },
         },
       })
@@ -85,14 +124,16 @@ export default function VideoPlayer({ url }: { url: string }) {
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
-        className="text-[#9cff93] hover:scale-110 transition-transform"
+        onClick={handlePlay}
+        title={knownRestricted ? 'Watch on YouTube' : 'Watch highlights'}
+        className="hover:scale-110 transition-transform"
+        style={{ color: knownRestricted ? '#ff4444' : '#9cff93', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '4px' }}
       >
         <span
           className="material-symbols-outlined"
           style={{ fontVariationSettings: "'FILL' 1" }}
         >
-          play_circle
+          {knownRestricted ? 'smart_display' : 'play_circle'}
         </span>
       </button>
 
@@ -229,9 +270,9 @@ export default function VideoPlayer({ url }: { url: string }) {
                 }}>
                   <span
                     className="material-symbols-outlined"
-                    style={{ fontSize: '48px', color: '#aaabb0' }}
+                    style={{ fontSize: '48px', color: '#9cff93' }}
                   >
-                    lock
+                    open_in_new
                   </span>
                   <div style={{ textAlign: 'center' }}>
                     <p style={{
@@ -243,7 +284,7 @@ export default function VideoPlayer({ url }: { url: string }) {
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
                     }}>
-                      Playback Restricted
+                      Opening YouTube
                     </p>
                     <p style={{
                       color: '#aaabb0',
@@ -251,7 +292,7 @@ export default function VideoPlayer({ url }: { url: string }) {
                       fontSize: '12px',
                       margin: '0 0 20px',
                     }}>
-                      The video owner has disabled playback on external sites.
+                      This video must be watched on YouTube.
                     </p>
                     <a
                       href={`https://www.youtube.com/watch?v=${videoId}`}

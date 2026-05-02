@@ -27,6 +27,7 @@ export default async function HighlightsPage({
       match_date,
       match_time,
       youtube_url,
+      youtube_embeddable,
       season,
       home_team:teams!fixtures_home_team_id_fkey(id, name, abbreviation, colour_primary, colour_secondary),
       away_team:teams!fixtures_away_team_id_fkey(id, name, abbreviation, colour_primary, colour_secondary)
@@ -146,7 +147,7 @@ export default async function HighlightsPage({
                           </div>
 
                         {hasVideo ? (
-                          <VideoPlayer url={fixture.youtube_url} />
+                          <VideoPlayer url={fixture.youtube_url} embeddable={fixture.youtube_embeddable} />
                           ) : (
                           <span className="material-symbols-outlined text-[#aaabb0]/30">
                           lock_clock
