@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../../../lib/supabase'
+import { revalidateFixturesCache } from '../../actions'
 
 type EmbedStatus = 'unchecked' | 'checking' | 'ok' | 'restricted' | 'unavailable'
 
@@ -64,12 +65,14 @@ export default function VideoManager() {
           setEmbedStatus(prev => ({ ...prev, [fixtureId]: 'ok' }))
           container.remove()
           supabase.from('fixtures').update({ youtube_embeddable: true }).eq('id', fixtureId)
+            .then(() => revalidateFixturesCache())
         },
         onError: (e: any) => {
           const restricted = e.data === 101 || e.data === 150
           setEmbedStatus(prev => ({ ...prev, [fixtureId]: restricted ? 'restricted' : 'unavailable' }))
           container.remove()
           supabase.from('fixtures').update({ youtube_embeddable: false }).eq('id', fixtureId)
+            .then(() => revalidateFixturesCache())
         },
       },
     })
@@ -126,6 +129,7 @@ export default function VideoManager() {
       .update({ youtube_url: url, youtube_embeddable: null })
       .eq('id', fixtureId)
     setSaving(null)
+    revalidateFixturesCache()
     if (url) checkEmbedStatus(fixtureId, url)
     else setEmbedStatus(prev => ({ ...prev, [fixtureId]: 'unchecked' }))
   }

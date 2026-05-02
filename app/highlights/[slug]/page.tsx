@@ -1,6 +1,6 @@
-import { supabase } from '../../../lib/supabase'
 import Link from 'next/link'
 import VideoPlayer from '../../components/VideoPlayer'
+import { getHighlightsData } from '../../../lib/data'
 
 export default async function HighlightsPage({
   params,
@@ -8,34 +8,13 @@ export default async function HighlightsPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-
-  const { data: category } = await supabase
-    .from('categories')
-    .select('*')
-    .eq('slug', slug)
-    .single()
+  const category = await getHighlightsData(slug)
 
   if (!category) {
     return <div className="pt-20 px-4 text-[#aaabb0]">League not found</div>
   }
 
-  const { data: fixtures } = await supabase
-    .from('fixtures')
-    .select(`
-      id,
-      round,
-      match_date,
-      match_time,
-      youtube_url,
-      youtube_embeddable,
-      season,
-      home_team:teams!fixtures_home_team_id_fkey(id, name, abbreviation, colour_primary, colour_secondary),
-      away_team:teams!fixtures_away_team_id_fkey(id, name, abbreviation, colour_primary, colour_secondary)
-    `)
-    .eq('category_id', category.id)
-    .order('match_date', { ascending: false })
-
-  const allFixtures = fixtures || []
+  const allFixtures = category.fixtures || []
 
   const rounds: Record<string, any[]> = {}
   allFixtures.forEach((fixture: any) => {
