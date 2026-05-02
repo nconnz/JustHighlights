@@ -22,7 +22,7 @@ export async function getHighlightsData(slug: string) {
   if (!category) return null
 
   const fixtures = ((category as any).fixtures || []).sort(
-    (a: any, b: any) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()
+    (a: any, b: any) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
   )
 
   return { ...category, fixtures }

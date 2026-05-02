@@ -51,7 +51,7 @@ export default async function HighlightsPage({
             : ''
 
           return (
-            <details key={round} className="group/section" open={index === 0}>
+            <details key={round} className="group/section" open={index === roundKeys.length - 1}>
               <summary className="flex items-baseline justify-between border-b border-[#46484d]/10 pb-2 cursor-pointer outline-none list-none">
                 <div className="flex items-center gap-3">
                   <h3 className="font-['Space_Grotesk'] font-bold text-2xl tracking-tight text-[#9cff93] uppercase">
