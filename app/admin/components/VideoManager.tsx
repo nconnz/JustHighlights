@@ -25,6 +25,7 @@ export default function VideoManager() {
   const [filter, setFilter] = useState('all')
   const [categories, setCategories] = useState<any[]>([])
   const [embedStatus, setEmbedStatus] = useState<Record<number, EmbedStatus>>({})
+  const [checkingAll, setCheckingAll] = useState(false)
   const ytApiReady = useRef(false)
   const ytApiLoading = useRef(false)
   const pendingChecks = useRef<Array<() => void>>([])
@@ -90,7 +91,7 @@ export default function VideoManager() {
     const { data } = await supabase
       .from('fixtures')
       .select(`
-        id, round, match_date, youtube_url, category_id,
+        id, round, match_date, youtube_url, youtube_embeddable, category_id,
         home_team:teams!fixtures_home_team_id_fkey(id, name, abbreviation, colour_primary),
         away_team:teams!fixtures_away_team_id_fkey(id, name, abbreviation, colour_primary)
       `)
@@ -98,11 +99,23 @@ export default function VideoManager() {
 
     setFixtures(data || [])
     const initialUrls: Record<number, string> = {}
+    const initialStatus: Record<number, EmbedStatus> = {}
     data?.forEach((f: any) => {
       initialUrls[f.id] = f.youtube_url || ''
+      if (f.youtube_embeddable === true) initialStatus[f.id] = 'ok'
+      else if (f.youtube_embeddable === false) initialStatus[f.id] = 'restricted'
+      else initialStatus[f.id] = 'unchecked'
     })
     setUrls(initialUrls)
+    setEmbedStatus(initialStatus)
     setLoading(false)
+  }
+
+  async function checkAll() {
+    setCheckingAll(true)
+    const withUrls = fixtures.filter(f => urls[f.id])
+    await Promise.all(withUrls.map(f => checkEmbedStatus(f.id, urls[f.id])))
+    setCheckingAll(false)
   }
 
   async function saveUrl(fixtureId: number) {
@@ -125,9 +138,19 @@ export default function VideoManager() {
 
   if (loading) return <p style={{ color: '#aaabb0', fontFamily: 'Lexend', fontSize: '13px' }}>Loading fixtures...</p>
 
+  const isCheckingAny = Object.values(embedStatus).some(s => s === 'checking')
+
   return (
     <div>
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <button
+          onClick={checkAll}
+          disabled={checkingAll || isCheckingAny}
+          style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid rgba(156,255,147,0.4)', background: 'rgba(156,255,147,0.08)', color: isCheckingAny ? '#aaabb0' : '#9cff93', fontSize: '11px', fontFamily: 'Lexend', cursor: checkingAll || isCheckingAny ? 'default' : 'pointer', fontWeight: 600, opacity: checkingAll || isCheckingAny ? 0.6 : 1 }}
+        >
+          {isCheckingAny ? 'Checking…' : 'Check All'}
+        </button>
+        <div style={{ width: '1px', height: '20px', background: 'rgba(70,72,77,0.4)' }} />
         <button
           onClick={() => setFilter('all')}
           style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid rgba(70,72,77,0.4)', background: filter === 'all' ? '#9cff93' : 'transparent', color: filter === 'all' ? '#006413' : '#aaabb0', fontSize: '11px', fontFamily: 'Lexend', cursor: 'pointer', fontWeight: 600 }}

@@ -59,7 +59,6 @@ function openOnYouTube(videoId: string) {
 export default function VideoPlayer({ url, embeddable }: { url: string; embeddable?: boolean | null }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [isRestricted, setIsRestricted] = useState(false)
   const [knownRestricted, setKnownRestricted] = useState(embeddable === false)
   const playerContainerRef = useRef<HTMLDivElement>(null)
   const playerRef = useRef<any>(null)
@@ -74,7 +73,6 @@ export default function VideoPlayer({ url, embeddable }: { url: string; embeddab
   const handleClose = useCallback(() => {
     setIsOpen(false)
     setIsPlaying(false)
-    setIsRestricted(false)
     if (playerRef.current) {
       try { playerRef.current.destroy() } catch {}
       playerRef.current = null
@@ -104,7 +102,8 @@ export default function VideoPlayer({ url, embeddable }: { url: string; embeddab
               markRestricted(videoId)
               setKnownRestricted(true)
               openOnYouTube(videoId)
-              setIsRestricted(true)
+              setIsOpen(false)
+              setIsPlaying(false)
             }
           },
         },
@@ -254,71 +253,6 @@ export default function VideoPlayer({ url, embeddable }: { url: string; embeddab
                     }}>
                       Tap to watch · Spoiler free
                     </p>
-                  </div>
-                </div>
-              ) : isRestricted ? (
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '12px',
-                  background: 'linear-gradient(135deg, #111318 0%, #1d2025 100%)',
-                  padding: '24px',
-                }}>
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: '48px', color: '#9cff93' }}
-                  >
-                    open_in_new
-                  </span>
-                  <div style={{ textAlign: 'center' }}>
-                    <p style={{
-                      color: '#f6f6fc',
-                      fontFamily: 'Space Grotesk',
-                      fontWeight: 700,
-                      fontSize: '14px',
-                      margin: '0 0 6px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                    }}>
-                      Opening YouTube
-                    </p>
-                    <p style={{
-                      color: '#aaabb0',
-                      fontFamily: 'Lexend',
-                      fontSize: '12px',
-                      margin: '0 0 20px',
-                    }}>
-                      This video must be watched on YouTube.
-                    </p>
-                    <a
-                      href={`https://www.youtube.com/watch?v=${videoId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '12px 24px',
-                        background: '#ff0000',
-                        color: '#fff',
-                        borderRadius: '8px',
-                        textDecoration: 'none',
-                        fontFamily: 'Lexend',
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                      }}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                        open_in_new
-                      </span>
-                      Watch on YouTube
-                    </a>
                   </div>
                 </div>
               ) : (
