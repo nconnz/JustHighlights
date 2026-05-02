@@ -114,10 +114,10 @@ export default async function HighlightsPage({
                             </div>
 
                             <div className="flex flex-col gap-0.5">
-                              <span className="font-['Space_Grotesk'] font-bold text-sm tracking-tight text-[#f6f6fc] uppercase">
-                                {homeTeam?.abbreviation}{' '}
+                              <span className="font-['Space_Grotesk'] font-bold text-sm tracking-tight text-[#f6f6fc]">
+                                {homeTeam?.name}{' '}
                                 <span className="text-[#aaabb0] font-normal italic text-xs">vs</span>{' '}
-                                {awayTeam?.abbreviation}
+                                {awayTeam?.name}
                               </span>
                               <span className="font-['Lexend'] text-[10px] text-[#aaabb0]">
                                 {matchDate}{matchTime ? ` · ${matchTime}` : ''}
